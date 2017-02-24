@@ -1,6 +1,7 @@
 package com.example.lenovo.coolweather;
 
 
+import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -12,13 +13,23 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.example.lenovo.coolweather.db.City;
+import com.example.lenovo.coolweather.db.County;
 import com.example.lenovo.coolweather.db.Province;
+import com.example.lenovo.coolweather.utils.HttpUtil;
 import com.example.lenovo.coolweather.utils.LogUtil;
+import com.example.lenovo.coolweather.utils.Utility;
 
 import org.litepal.crud.DataSupport;
 
+import java.io.IOException;
 import java.util.List;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Response;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -37,6 +48,12 @@ public class ChooseAreaFragment extends Fragment {
 
     private List<Province> provinceList;
     private Province selectedProvince;
+    private City selectedCity;
+    private List<City> cityList;
+    private County selectedCounty;
+    private List<County> countyList;
+    private ProgressDialog progressDialog;
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -71,18 +88,90 @@ public class ChooseAreaFragment extends Fragment {
                if (currentLevel == LEVEL_PROVINCE){
                    selectedProvince = provinceList.get(i);
                    queryCities();
+               }else if (currentLevel == LEVEL_CITY){
+                   selectedCity = cityList.get(i);
+                   queryCounties();
                }
             }
         });
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if (currentLevel == LEVEL_COUNTY){
+                    queryCities();
+                }else if (currentLevel == LEVEL_CITY){
+                    queryProvinces();
+                }
 
             }
         });
         queryProvinces();
     }
 
+
+
+    private void queryFromServer(String address, final String type) {
+        LogUtil.d("the address is="+address+", the type is="+type);
+        showProgressDialog();
+        HttpUtil.sendOkHttpRequest(address, new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        closeProgressDialog();
+                        Toast.makeText(getContext(), "加载失败", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String responseText = response.body().string();
+                boolean result = false;
+                if ("province".equals(type)){
+                    result = Utility.handelProvinceResponse(responseText);
+                }else if ("city".equals(type)){
+                    result = Utility.handelCityResponse(responseText,selectedProvince.getId());
+                } else if ("county".equals(type)) {
+                    result = Utility.handelCountyResponse(responseText,selectedCity.getId());
+                }
+                if (result){
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            closeProgressDialog();
+                            if ("province".equals(type)){
+                                queryProvinces();
+                            }else if ("city".equals(type)){
+                                queryCities();
+                            }else if ("county".equals(type)){
+                                queryCounties();
+                            }
+                        }
+                    });
+                }
+
+            }
+        });
+    }
+
+
+
+    private void closeProgressDialog() {
+        if (progressDialog != null){
+            progressDialog.dismiss();
+        }
+    }
+
+    private void showProgressDialog() {
+        if (progressDialog == null) {
+            progressDialog = new ProgressDialog(getActivity());
+            progressDialog.setMessage("正在加载...");
+            progressDialog.setCanceledOnTouchOutside(false);
+        }
+        progressDialog.show();
+    }
     private void queryProvinces() {
         titleText.setText("中国");
         backButton.setVisibility(View.GONE);
@@ -100,12 +189,33 @@ public class ChooseAreaFragment extends Fragment {
             queryFromServer(address,"province");
         }
     }
-
-    private void queryFromServer(String address, String type) {
-        LogUtil.
-    }
-
     private void queryCities() {
-
+        titleText.setText(selectedProvince.getProvinceName());
+        backButton.setVisibility(View.GONE);
+        cityList = DataSupport.where("provinceid = ?",String.valueOf(selectedProvince.getId())).find(City.class);
+        if (cityList.size() > 0){
+            dataList.clear();
+            for (City city:cityList){
+                dataList.add(city.getCityName());
+            }
+            adapter.notifyDataSetChanged();
+            listView.setSelection(0);
+            currentLevel = LEVEL_CITY;
+        }
+    }
+    private void queryCounties() {
+        titleText.setText(selectedCity.getCityName());
+        backButton.setVisibility(View.GONE);
+        countyList = DataSupport.where("cityid = ?",String.valueOf(selectedCity.getId())).find(County.class);
+        if (countyList.size() > 0){
+            dataList.clear();
+            for (County county: countyList){
+                dataList.add(county.getCountyName());
+            }
+        }
+        adapter.notifyDataSetChanged();
+        listView.setSelection(0);
+        currentLevel = LEVEL_COUNTY;
     }
 }
+

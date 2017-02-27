@@ -3,6 +3,7 @@ package com.example.lenovo.coolweather.activity;
 import android.app.Activity;
 import android.support.v7.app.ActionBar;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -16,7 +17,7 @@ import java.util.List;
  */
 
 public class ActivityCollete {
-    private static  List <Activity> activityList = null;
+    private static  List <Activity> activityList = new ArrayList<>();
     public static void AddActivity(Activity activity){
         activityList.add(activity);
     }

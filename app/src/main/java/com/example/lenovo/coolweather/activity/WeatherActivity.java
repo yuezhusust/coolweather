@@ -25,6 +25,7 @@ import com.bumptech.glide.Glide;
 import com.example.lenovo.coolweather.R;
 import com.example.lenovo.coolweather.gson.Forecast;
 import com.example.lenovo.coolweather.gson.Weather;
+import com.example.lenovo.coolweather.service.AutoUpdateService;
 import com.example.lenovo.coolweather.utils.HttpUtil;
 import com.example.lenovo.coolweather.utils.LogUtil;
 import com.example.lenovo.coolweather.utils.Utility;
@@ -219,6 +220,7 @@ public class WeatherActivity extends BaseActivity {
         washText.setText(wash);
         sportText.setText(sport);
         weatherLayout.setVisibility(View.VISIBLE);
-
+        Intent intent = new Intent(this, AutoUpdateService.class);
+        startService(intent);
     }
 }

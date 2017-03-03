@@ -6,12 +6,15 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.preference.PreferenceManager;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -47,7 +50,9 @@ public class WeatherActivity extends BaseActivity {
     private TextView washText;
     private TextView sportText;
     private ImageView backImage;
-    private SwipeRefreshLayout refreshLayout;
+    public SwipeRefreshLayout refreshLayout;
+    private Button homeBtn;
+    public DrawerLayout drawerLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +77,14 @@ public class WeatherActivity extends BaseActivity {
         backImage = (ImageView) findViewById(R.id.bk_image);
         refreshLayout = (SwipeRefreshLayout) findViewById(R.id.refresh_layout);
         refreshLayout.setColorSchemeResources(R.color.colorPrimary);
+        homeBtn = (Button) findViewById(R.id.home_btn);
+        drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        homeBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                drawerLayout.openDrawer(GravityCompat.START);
+            }
+        });
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String bkImageUri = sharedPreferences.getString("imageUri", null);
         if (bkImageUri != null) {
@@ -131,7 +144,7 @@ public class WeatherActivity extends BaseActivity {
         });
     }
 
-    private void requestWeatherInfo(String weatherId) {
+    public void requestWeatherInfo(String weatherId) {
         String weatherUrl = "http://guolin.tech/api/weather?cityid=" + weatherId + "&key=bc0418b57b2d4918819d3974ac1285d9";
         LogUtil.d("the weatherUrl is=" + weatherUrl);
         HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
